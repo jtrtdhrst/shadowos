@@ -33,7 +33,7 @@ function Write-SyncLog {
 function Invoke-Git {
     param([Parameter(Mandatory)][string[]]$GitArguments)
 
-    $output = & git -C $script:GitWorkingDirectory @GitArguments 2>&1
+    $output = & git -c "credential.helper=" -c "credential.helper=!gh auth git-credential" -C $script:GitWorkingDirectory @GitArguments 2>&1
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
         throw "Git command failed (exit code $exitCode): git $($GitArguments -join ' ')"
@@ -155,6 +155,13 @@ try {
             $hooksPath = Join-Path $script:RepositoryRoot ".githooks"
             if (-not (Test-Path -LiteralPath (Join-Path $hooksPath "post-commit"))) {
                 throw "Git post-commit hook not found in $hooksPath."
+            }
+            if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+                throw "GitHub CLI (gh) is required for commit publication and PR creation. Install it and run 'gh auth login'."
+            }
+            & gh auth status --hostname github.com *> $null
+            if ($LASTEXITCODE -ne 0) {
+                throw "GitHub CLI is not authenticated. Run 'gh auth login' and retry installation."
             }
             $null = Invoke-Git @("config", "--local", "core.hooksPath", ".githooks")
             $syncResult = Invoke-RepositorySync

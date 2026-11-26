@@ -17,7 +17,7 @@ function Write-PublishLog {
 function Invoke-Git {
     param([Parameter(Mandatory)][string[]]$GitArguments)
 
-    $output = & git -C $RepositoryPath @GitArguments 2>&1
+    $output = & git -c "credential.helper=" -c "credential.helper=!gh auth git-credential" -C $RepositoryPath @GitArguments 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Git failed (exit code $LASTEXITCODE): git $($GitArguments -join ' ')`n$($output -join [Environment]::NewLine)"
     }

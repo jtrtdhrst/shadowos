@@ -69,13 +69,13 @@ Confirm that `HEAD` matches `origin/bootstrap`, all three paths are listed, and 
 
 For a local folder that should synchronize commits in both directions, use `scripts/sync-repo.ps1 -Install` from the checkout. Installation configures the repository-local `.githooks` directory and a per-user Windows Scheduled Task. The `post-commit` hook pushes each commit on a task branch to the matching GitHub branch and opens a PR to the current default branch if needed. Commits on the default branch are deliberately not auto-pushed: create a task branch and use the PR workflow. GitHub-to-local synchronization fetches the currently checked-out branch every minute and fast-forwards it only when the working tree is clean. A dirty tree, divergent history, missing remote branch, or authentication failure is never reset or overwritten; check `%LOCALAPPDATA%\ShadowOS\sync.log` and resolve the condition before retrying.
 
-From the repository root in PowerShell, install the per-user Scheduled Task:
+Install GitHub CLI and authenticate it once on each computer (`gh auth login`), then from the repository root in PowerShell install the post-commit hook and per-user Scheduled Task:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -Install
 ```
 
-The task runs while that Windows user is signed in, starts missed runs when available, and skips overlapping runs. Local commits are pushed immediately by Git's post-commit hook (not by the scheduled task). Its update/error log is `%LOCALAPPDATA%\ShadowOS\sync.log`. To run a one-time sync manually, omit `-Install`; to remove the task, use `-Uninstall`:
+The task runs while that Windows user is signed in, starts missed runs when available, and skips overlapping runs. Sync/publish commands use the existing `gh` authentication through a command-scoped Git credential helper; no token is written to repository files or global Git configuration. Local commits are pushed immediately by Git's post-commit hook (not by the scheduled task). Its update/error log is `%LOCALAPPDATA%\ShadowOS\sync.log`. To run a one-time sync manually, omit `-Install`; to remove the task, use `-Uninstall`:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -RepositoryPath .
