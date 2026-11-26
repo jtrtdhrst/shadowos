@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080d16">
+    <meta
+      name="description"
+      content="ShadowOS — pierwszy ekran projektu."
+    >
+    <title>ShadowOS — Hello, world.</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main class="site-shell">
+      <header class="site-header">
+        <a class="wordmark" href="/" aria-label="ShadowOS — strona główna">
+          <span class="wordmark__symbol" aria-hidden="true">S</span>
+          <span>shadow<span class="wordmark__accent">os</span></span>
+        </a>
+        <span class="build-label">
+          <span class="build-label__dot" aria-hidden="true"></span>
+          STATYCZNY DEMO
+        </span>
+      </header>
+
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__copy">
+          <p class="eyebrow"><span>01</span> PIERWSZY EKRAN</p>
+          <h1 id="hero-title">Hello,<br><span>world.</span></h1>
+          <p class="hero__description">
+            ShadowOS zaczyna się tutaj. To lekka strona HTML, CSS i JavaScript,
+            gotowa do wdrożenia na Cloudflare.
+          </p>
+
+          <div class="hero__actions">
+            <button class="status-button" id="check-status" type="button">
+              Sprawdź status
+              <span aria-hidden="true">↗</span>
+            </button>
+            <p class="status-message" id="status-message" aria-live="polite">
+              Wszystko gotowe.
+            </p>
+          </div>
+        </div>
+
+        <aside class="status-card" aria-label="Podgląd statusu ShadowOS">
+          <div class="status-card__header">
+            <span>STATUS SYSTEMU</span>
+            <span class="status-card__live">
+              <span class="status-card__dot" aria-hidden="true"></span>
+              ONLINE
+            </span>
+          </div>
+          <div class="status-orbit" aria-hidden="true">
+            <span class="status-orbit__ring status-orbit__ring--outer"></span>
+            <span class="status-orbit__ring status-orbit__ring--inner"></span>
+            <span class="status-orbit__core">SH</span>
+            <span class="status-orbit__spark status-orbit__spark--one"></span>
+            <span class="status-orbit__spark status-orbit__spark--two"></span>
+          </div>
+          <div class="status-card__footer">
+            <span>SHADOWOS / WEB</span>
+            <span>V 0.1</span>
+          </div>
+        </aside>
+      </section>
+
+      <footer class="site-footer">
+        <span>PROSTY START. DOBRY KIERUNEK.</span>
+        <span>BEZ FRAMEWORKÓW · BEZ SEKRETÓW</span>
+      </footer>
+    </main>
+  </body>
+</html>
