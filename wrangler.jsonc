@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/wrangler",
-  "name": "shadowos",
+  "name": "shadow-os",
   "compatibility_date": "2026-11-26",
   "assets": {
     "directory": "./public"
