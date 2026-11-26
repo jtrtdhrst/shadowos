@@ -65,6 +65,25 @@ git status --short --branch
 
 Confirm that `HEAD` matches `origin/bootstrap`, all three paths are listed, and the checkout is clean. This verifies repository synchronization; it does not claim live/background synchronization of arbitrary desktop files.
 
+#### Automatic updates on Windows
+
+For a local folder that should pick up merged default-branch changes automatically, use a dedicated clean clone and `scripts/sync-repo.ps1`. It fetches the current GitHub default branch and fast-forwards the checkout once per minute. It does not push local work, switch branches, or sync unmerged PRs. It stops if the checkout has local changes or is on a non-default branch, so it never resets or overwrites those edits.
+
+From the repository root in PowerShell, install the per-user Scheduled Task:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -Install
+```
+
+The task runs while that Windows user is signed in, starts missed runs when available, and skips overlapping runs. Its update/error log is `%LOCALAPPDATA%\ShadowOS\sync.log`. To run a one-time sync manually, omit `-Install`; to remove the task, use `-Uninstall`:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -Uninstall
+```
+
+The scheduled task uses `-ExecutionPolicy Bypass` for that PowerShell process only; it does not change the machine's execution-policy setting. A one-minute poll is not real-time: changes appear after they are merged into the GitHub default branch and the next scheduled run succeeds. Use a separate checkout for editing; if the sync clone becomes dirty, the task stops and logs the reason instead of replacing local files. The initial checkout and scheduled task must be set up separately on each computer.
+
 ## 3. Branch protections and one-time GitHub setup
 
 Use a branch ruleset or classic branch protection, not duplicate mechanisms for the same purpose. The owner must configure and verify the actual repository settings; availability depends on repository visibility, plan and permissions.
