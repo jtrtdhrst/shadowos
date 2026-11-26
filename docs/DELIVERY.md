@@ -26,6 +26,45 @@ Launch OpenCode from the project checkout. No extra `opencode.json` is required 
 
 At the start of each task, fetch the remote and work from the appropriate up-to-date branch. Remote changes do not magically update local files. Start a fresh task/session after significant instruction changes when needed to ensure the applicable rules are read. Use Git's native history; no separate SHA registry is necessary.
 
+### Multi-computer synchronization
+
+The canonical project documents are `AGENTS.md`, `PRD.md`, and `docs/DELIVERY.md` in this GitHub repository. Work from a clone of this repository on every computer; do not maintain separate editable copies or copy the files between machines. GitHub sync is commit-based, not real-time: uncommitted changes and files outside the checkout stay on that computer. Changes become canonical after their pull request is merged into the default branch.
+
+On a computer that does not yet have a checkout:
+
+```sh
+git clone https://github.com/jtrtdhrst/shadowos.git
+cd shadowos
+git status --short --branch
+git symbolic-ref refs/remotes/origin/HEAD
+```
+
+The clone checks out GitHub's default branch. For this repository it currently resolves to `bootstrap`; do not assume `main` exists.
+
+Before continuing work on an existing checkout, inspect local changes and preserve them before updating:
+
+```sh
+git status --short --branch
+git fetch origin
+git switch bootstrap
+git pull --ff-only origin bootstrap
+```
+
+Make edits on a task branch based on the updated default branch, then commit, push, and open a pull request into `bootstrap`. Once merged, repeat the update commands on the other computers. Do not pull over uncommitted work or use force-push to resolve divergence.
+
+To verify synchronization on another checkout after a merge:
+
+```sh
+git fetch origin
+git switch bootstrap
+git pull --ff-only origin bootstrap
+git rev-parse HEAD
+git ls-tree -r --name-only HEAD -- AGENTS.md PRD.md docs/DELIVERY.md
+git status --short --branch
+```
+
+Confirm that `HEAD` matches `origin/bootstrap`, all three paths are listed, and the checkout is clean. This verifies repository synchronization; it does not claim live/background synchronization of arbitrary desktop files.
+
 ## 3. Branch protections and one-time GitHub setup
 
 Use a branch ruleset or classic branch protection, not duplicate mechanisms for the same purpose. The owner must configure and verify the actual repository settings; availability depends on repository visibility, plan and permissions.
