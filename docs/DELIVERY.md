@@ -62,7 +62,7 @@ Discover these from existing repository configuration and deployment tooling. As
 | Setup/install command | None |
 | Local lint / typecheck / test / build commands | No configured lint, typecheck or test suite; validate Worker deployment with Wrangler dry-run |
 | Required GitHub check names | `Workers Builds: shadow-os` (observed; latest PR check failed) |
-| Deployment target and trigger | Cloudflare Worker `shadow-os`; owner-confirmed Production branch `bootstrap`, build command none, deploy command `npx wrangler deploy`, root `/`, watch include `*` and exclude `node_modules/**, .git/` |
+| Deployment target and trigger | Cloudflare Worker `shadow-os`; owner-confirmed Production branch `bootstrap`, build command none, Production deploy command `npx wrangler deploy`, Preview command `npx wrangler preview`, root `/`, watch include `*` and exclude `node_modules/**, .git/`; Wrangler config must include `previews` (empty for this static Worker) |
 | How to identify deployed revision | Cloudflare build/deployment record; not yet independently verified |
 | Production URL / smoke checks | Worker public URL and production smoke test still need verification |
 | Rollback procedure / previous release identification | Cloudflare deployment history; procedure not yet exercised |
