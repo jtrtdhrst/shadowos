@@ -75,11 +75,18 @@ function Invoke-RepositorySync {
         throw "Could not resolve the GitHub default branch from origin/HEAD."
     }
 
-    $defaultBranch = $defaultRef.Substring("origin/".Length)
     $currentBranch = [string](Invoke-Git @("branch", "--show-current"))
     $currentBranch = $currentBranch.Trim()
-    if ($currentBranch -ne $defaultBranch) {
-        throw "This checkout is on '$currentBranch'; automatic sync only updates the default branch '$defaultBranch'."
+    if ([string]::IsNullOrWhiteSpace($currentBranch)) {
+        throw "Could not resolve the checked-out branch; automatic sync requires a branch checkout."
+    }
+
+    $trackingRef = "refs/remotes/origin/$currentBranch"
+    $trackingExists = & git -C $script:GitWorkingDirectory show-ref --verify --quiet $trackingRef
+    if ($LASTEXITCODE -ne 0) {
+        $message = "No origin/$currentBranch branch exists yet; nothing to pull."
+        Write-SyncLog $message
+        return $message
     }
 
     $localChanges = [string](Invoke-Git @(
@@ -91,17 +98,17 @@ function Invoke-RepositorySync {
         throw "This checkout has local changes. Sync stopped without changing files; preserve the work, then retry."
     }
 
-    $null = Invoke-Git @("merge", "--ff-only", $defaultRef)
+    $null = Invoke-Git @("merge", "--ff-only", "origin/$currentBranch")
     $after = [string](Invoke-Git @("rev-parse", "HEAD"))
     $after = $after.Trim()
 
     if ($before -ne $after) {
-        $message = "Updated $defaultBranch from $before to $after."
+        $message = "Updated $currentBranch from $before to $after."
         Write-SyncLog $message
         return $message
     }
 
-    return "Already current: $defaultBranch at $after."
+    return "Already current: $currentBranch at $after."
 }
 
 try {
@@ -145,6 +152,11 @@ try {
             -RunLevel Limited
 
         if ($PSCmdlet.ShouldProcess($TaskName, "Install/update per-user task to sync every minute")) {
+            $hooksPath = Join-Path $script:RepositoryRoot ".githooks"
+            if (-not (Test-Path -LiteralPath (Join-Path $hooksPath "post-commit"))) {
+                throw "Git post-commit hook not found in $hooksPath."
+            }
+            $null = Invoke-Git @("config", "--local", "core.hooksPath", ".githooks")
             $syncResult = Invoke-RepositorySync
             Register-ScheduledTask `
                 -TaskName $TaskName `
@@ -152,10 +164,10 @@ try {
                 -Trigger $trigger `
                 -Settings $settings `
                 -Principal $principal `
-                -Description "Fast-forward the clean ShadowOS checkout from the GitHub default branch every minute." `
+                -Description "Fast-forward the clean checked-out ShadowOS branch from its matching GitHub branch every minute." `
                 -Force | Out-Null
             Write-SyncLog "Installed scheduled task; $syncResult"
-            Write-Output "Installed '$TaskName'. It checks the GitHub default branch every minute while you are signed in."
+            Write-Output "Installed '$TaskName'. It checks the checked-out branch every minute while you are signed in; local task-branch commits are pushed by the Git post-commit hook."
             Write-Output $syncResult
         }
         return

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+repo_root="$(git rev-parse --show-toplevel)" || exit 0
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/publish-commit.ps1" -RepositoryPath "$repo_root"
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo "ShadowOS commit was created locally, but automatic publication failed. See %LOCALAPPDATA%\\ShadowOS\\sync.log." >&2
+fi
+
+# A post-commit hook cannot undo a successful local commit. Report publication
+# failures without making Git imply that the commit itself was rolled back.
+exit 0
