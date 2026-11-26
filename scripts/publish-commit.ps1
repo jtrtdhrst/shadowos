@@ -5,6 +5,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $logPath = Join-Path $env:LOCALAPPDATA "ShadowOS\sync.log"
+. (Join-Path $PSScriptRoot "opencode-process.ps1")
 $repositoryMutex = $null
 $mutexHeld = $false
 
@@ -46,6 +47,13 @@ function Invoke-Gh {
 
 try {
     $RepositoryPath = (Resolve-Path -LiteralPath $RepositoryPath).Path
+    if (-not (Test-OpenCodeRunning)) {
+        $message = "Skipped commit publication because OpenCode is not running; the commit remains local."
+        Write-PublishLog $message
+        Write-Output $message
+        return
+    }
+
     $mutexSuffix = [regex]::Replace($RepositoryPath.ToLowerInvariant(), "[^a-z0-9]", "_")
     $repositoryMutex = New-Object System.Threading.Mutex($false, "Local\ShadowOSGitSync_$mutexSuffix")
     try {
