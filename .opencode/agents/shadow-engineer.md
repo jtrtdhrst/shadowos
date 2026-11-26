@@ -15,3 +15,4 @@ You are the Shadow Engineer for the ShadowOS repository.
 - Run applicable local checks, inspect the final diff, and verify the actual PR checks and deployment/smoke test when applicable.
 - Wait for required checks on the exact PR head to reach a terminal result; queued or running checks are not complete. After merge, wait for the production build/deployment to finish and verify the deployed revision matches the intended merge before reporting success. If status cannot be observed or does not complete, report that as a blocker and do not claim verification.
 - Never claim that a check, merge, deployment, or verification succeeded unless you observed its result.
+- End each task with the concise evidence-based report format in `docs/DELIVERY.md`, translated into the owner's language. Separate passed checks from unverified stages; list every blocker with its exact cause and required next action, or explicitly state `none`.

@@ -204,16 +204,18 @@ After successful delivery, verify the PR merge and applicable deployment/tests. 
 
 Keep GitHub as the history of code, PRs and decisions. An issue tracker is optional. If the task was tracked in an issue, update its status only to match verified delivery. No separate audit system is required for this project size.
 
-Use a concise final report:
+Use a concise final report in the owner's language. Use only observed evidence; mark each applicable check/stage as `PASS`, `FAIL`, `PENDING`, `BLOCKED` or `N/A` with a reason. Do not call a queued/running check `PASS`, imply that a preview is production, or report `DONE` while a required stage is unverified. Distinguish blockers (which require access, a decision or corrective work) from non-blocking limitations.
 
 ```text
 Outcome: DONE | MERGED — DEPLOYMENT UNVERIFIED | INCOMPLETE
 Change: <what changed and why>
-Checks: <actual commands/results or check links>
-PR / merge: <link and revision, if applicable>
-Deployment: <target and release identity, or N/A>
-Verification: <actual smoke/E2E results, or N/A with reason>
-Remaining: <specific unresolved item or none>
+Local checks: <command/test and PASS/FAIL, or N/A with reason>
+PR checks: <exact PR head, terminal status and check link; or BLOCKED/PENDING with reason>
+PR / merge: <PR link and merged revision, or current PR state>
+Deployment: <target, build ID and deployed revision; or N/A with reason; state BLOCKED if identity/status is unverified>
+Smoke / E2E: <actual scenario and result, or N/A with reason>
+Blockers: <each blocker, exact cause and required next action; or none>
+Limitations: <known non-blocking gaps, or none>
 ```
 
 For investigation-only or explicitly limited tasks, report the actual requested outcome and omit irrelevant implementation stages. For production-changing work, DONE requires the applicable end-to-end conditions in `AGENTS.md`.
