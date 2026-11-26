@@ -155,14 +155,15 @@ try {
     if ($Install) {
         $powerShellPath = (Get-Process -Id $PID).Path
         $scriptPath = (Resolve-Path -LiteralPath $PSCommandPath).Path
-        $taskArguments = "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$scriptPath`" -RepositoryPath `"$($script:RepositoryRoot)`""
+        $taskArguments = "-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -RepositoryPath `"$($script:RepositoryRoot)`""
         $action = New-ScheduledTaskAction -Execute $powerShellPath -Argument $taskArguments
         $trigger = New-ScheduledTaskTrigger `
             -Once `
             -At (Get-Date).AddMinutes(1) `
             -RepetitionInterval ([TimeSpan]::FromMinutes(1))
         $settings = New-ScheduledTaskSettingsSet `
-            -StartWhenAvailable `
+            -RunOnlyIfNetworkAvailable `
+            -Hidden `
             -MultipleInstances IgnoreNew `
             -ExecutionTimeLimit ([TimeSpan]::FromMinutes(5))
         $principal = New-ScheduledTaskPrincipal `
@@ -190,10 +191,10 @@ try {
                 -Trigger $trigger `
                 -Settings $settings `
                 -Principal $principal `
-                -Description "Fast-forward the clean checked-out ShadowOS branch from its matching GitHub branch every minute." `
+                -Description "Quietly fast-forward the clean checked-out ShadowOS branch from its matching GitHub branch every minute while signed in and online." `
                 -Force | Out-Null
             Write-SyncLog "Installed scheduled task; $syncResult"
-            Write-Output "Installed '$TaskName'. It checks the checked-out branch every minute while you are signed in; local task-branch commits are pushed by the Git post-commit hook."
+            Write-Output "Installed '$TaskName'. It runs hidden once per minute only while you are signed in and online; missed runs are not replayed. Local task-branch commits are pushed by the Git post-commit hook."
             Write-Output $syncResult
         }
         return

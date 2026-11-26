@@ -75,14 +75,14 @@ Install GitHub CLI and authenticate it once on each computer (`gh auth login`), 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -Install
 ```
 
-The task runs while that Windows user is signed in, starts missed runs when available, and skips overlapping runs. Sync/publish commands use the existing `gh` authentication through a command-scoped Git credential helper; no token is written to repository files or global Git configuration. Local commits are pushed immediately by Git's post-commit hook (not by the scheduled task). Its update/error log is `%LOCALAPPDATA%\ShadowOS\sync.log`. To run a one-time sync manually, omit `-Install`; to remove the task, use `-Uninstall`:
+The task runs hidden while that Windows user is signed in and the network is available. It does not replay missed runs, skips overlapping runs, and launches PowerShell with a hidden window. Sync/publish commands use the existing `gh` authentication through a command-scoped Git credential helper; no token is written to repository files or global Git configuration. Local commits are pushed immediately by Git's post-commit hook (not by the scheduled task). Its update/error log is `%LOCALAPPDATA%\ShadowOS\sync.log`. To run a one-time sync manually, omit `-Install`; to remove the task, use `-Uninstall`:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -RepositoryPath .
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -Uninstall
 ```
 
-The scheduled task uses `-ExecutionPolicy Bypass` for that PowerShell process only; it does not change the machine's execution-policy setting. GitHub commits appear after the next successful one-minute poll; this is near-real-time polling, not an instant webhook. The task updates the currently checked-out branch only. To receive a merged PR on a checkout that is on a task branch, switch to the default branch after preserving or merging that work. Each computer needs its own clone, Git hook installation, and scheduled task. GitHub is authoritative for committed history; local uncommitted changes remain local.
+The scheduled task uses `-ExecutionPolicy Bypass` for that hidden PowerShell process only; it does not change the machine's execution-policy setting. GitHub commits appear after the next successful one-minute poll; this is near-real-time polling, not an instant webhook. The task updates the currently checked-out branch only. To receive a merged PR on a checkout that is on a task branch, switch to the default branch after preserving or merging that work. Each computer needs its own clone, Git hook installation, and scheduled task. GitHub is authoritative for committed history; local uncommitted changes remain local.
 
 ## 3. Branch protections and one-time GitHub setup
 
