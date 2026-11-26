@@ -9,6 +9,8 @@ $ErrorActionPreference = "Stop"
 $TaskName = "ShadowOS GitHub Auto Sync"
 $script:GitWorkingDirectory = $null
 $script:RepositoryRoot = $null
+$script:RepositoryMutex = $null
+$script:MutexHeld = $false
 $script:LogPath = Join-Path $env:LOCALAPPDATA "ShadowOS\sync.log"
 
 function Write-SyncLog {
@@ -33,8 +35,11 @@ function Write-SyncLog {
 function Invoke-Git {
     param([Parameter(Mandatory)][string[]]$GitArguments)
 
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     $output = & git -c "credential.helper=" -c "credential.helper=!gh auth git-credential" -C $script:GitWorkingDirectory @GitArguments 2>&1
     $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
     if ($exitCode -ne 0) {
         throw "Git command failed (exit code $exitCode): git $($GitArguments -join ' ')"
     }
@@ -117,6 +122,20 @@ try {
     }
 
     Initialize-Repository
+    $mutexSuffix = [regex]::Replace($script:RepositoryRoot.ToLowerInvariant(), "[^a-z0-9]", "_")
+    $script:RepositoryMutex = New-Object System.Threading.Mutex($false, "Local\ShadowOSGitSync_$mutexSuffix")
+    try {
+        $script:MutexHeld = $script:RepositoryMutex.WaitOne([TimeSpan]::FromSeconds(30))
+    }
+    catch [System.Threading.AbandonedMutexException] {
+        $script:MutexHeld = $true
+        Write-SyncLog "Recovered an abandoned repository sync lock."
+    }
+    if (-not $script:MutexHeld) {
+        Write-SyncLog "Skipped sync because another repository sync/publish is running."
+        Write-Output "Skipped: another repository sync/publish is running."
+        return
+    }
 
     if ($Uninstall) {
         $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
@@ -194,4 +213,12 @@ catch {
     }
     [Console]::Error.WriteLine($message)
     exit 1
+}
+finally {
+    if ($script:MutexHeld -and $null -ne $script:RepositoryMutex) {
+        $script:RepositoryMutex.ReleaseMutex()
+    }
+    if ($null -ne $script:RepositoryMutex) {
+        $script:RepositoryMutex.Dispose()
+    }
 }
