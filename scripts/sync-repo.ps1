@@ -7,6 +7,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $TaskName = "ShadowOS GitHub Auto Sync"
+. (Join-Path $PSScriptRoot "opencode-process.ps1")
 $script:GitWorkingDirectory = $null
 $script:RepositoryRoot = $null
 $script:RepositoryMutex = $null
@@ -63,6 +64,11 @@ function Initialize-Repository {
 }
 
 function Invoke-RepositorySync {
+    if (-not (Test-OpenCodeRunning)) {
+        $message = "Skipped sync because OpenCode is not running."
+        return $message
+    }
+
     $before = [string](Invoke-Git @("rev-parse", "HEAD"))
     $before = $before.Trim()
 
@@ -153,10 +159,11 @@ try {
     }
 
     if ($Install) {
-        $powerShellPath = (Get-Process -Id $PID).Path
+        $wscriptPath = Join-Path $env:WINDIR "System32\wscript.exe"
+        $launcherPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "run-sync-hidden.vbs")).Path
         $scriptPath = (Resolve-Path -LiteralPath $PSCommandPath).Path
-        $taskArguments = "-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -RepositoryPath `"$($script:RepositoryRoot)`""
-        $action = New-ScheduledTaskAction -Execute $powerShellPath -Argument $taskArguments
+        $taskArguments = "//B //NoLogo `"$launcherPath`" `"$scriptPath`" `"$($script:RepositoryRoot)`""
+        $action = New-ScheduledTaskAction -Execute $wscriptPath -Argument $taskArguments
         $trigger = New-ScheduledTaskTrigger `
             -Once `
             -At (Get-Date).AddMinutes(1) `
@@ -191,10 +198,10 @@ try {
                 -Trigger $trigger `
                 -Settings $settings `
                 -Principal $principal `
-                -Description "Quietly fast-forward the clean checked-out ShadowOS branch from its matching GitHub branch every minute while signed in and online." `
+                -Description "Run without a visible window; sync the clean checked-out ShadowOS branch only while OpenCode is running, signed in, and online." `
                 -Force | Out-Null
             Write-SyncLog "Installed scheduled task; $syncResult"
-            Write-Output "Installed '$TaskName'. It runs hidden once per minute only while you are signed in and online; missed runs are not replayed. Local task-branch commits are pushed by the Git post-commit hook."
+            Write-Output "Installed '$TaskName'. A hidden check runs once per minute while you are signed in and online; Git sync is skipped unless OpenCode is running. Missed runs are not replayed. Local task-branch commits are published by the Git post-commit hook only while OpenCode is running."
             Write-Output $syncResult
         }
         return
