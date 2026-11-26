@@ -40,8 +40,8 @@ A draft PRD does not prohibit repository inspection, setup, or explicitly reques
 ## 4. Start every implementation task
 
 - Identify the goal, affected scope, expected outcome and relevant acceptance criteria. Use an existing issue if there is one; do not create an issue simply to satisfy process.
-- Check `git status`, current branch, remotes and the latest `origin/main` before starting. Fetch from the configured origin. Do not overwrite, reset, discard, or automatically stash unrelated local changes.
-- If there is already a branch or PR for the same task, continue it after checking its status. Otherwise create one short-lived branch from the current `origin/main` using the existing Git workflow.
+- Check `git status`, current branch, remotes and the latest GitHub default branch before starting. Fetch from the configured origin. The current default is `bootstrap`; verify it through `origin/HEAD` because `main` does not exist. Do not overwrite, reset, discard, or automatically stash unrelated local changes.
+- If there is already a branch or PR for the same task, continue it after checking its status. Otherwise create one short-lived branch from the current GitHub default branch (`origin/bootstrap` while it remains the default) using the existing Git workflow.
 - Read the applicable repository instructions and documentation from the task workspace. Treat the current task branch as the working version. If the upstream requirements change during execution, check for a relevant conflict before merging.
 - Inspect existing architecture, dependencies, tests and conventions before choosing an approach. Prefer the smallest change that actually solves the problem. Reuse existing abstractions and tooling.
 - If remote synchronization fails, do not claim that the checkout is current. Local investigation may continue if safe; do not merge or deploy against an unverified remote state.
@@ -75,7 +75,7 @@ A production-changing task is DONE only when all applicable items are verified:
 
 - The requested behavior and acceptance criteria are satisfied.
 - Required local and remote checks pass; relevant regression tests exist.
-- The approved change is merged into `main` and documentation is consistent.
+- The approved change is merged into the current GitHub default branch (`bootstrap` while it remains the default) and documentation is consistent.
 - The intended revision is deployed, if this project has an applicable deployment target.
 - Applicable post-deploy smoke/E2E checks pass and the recovery path is known.
 - The task branch is cleaned up when safe and no unrelated changes were included.

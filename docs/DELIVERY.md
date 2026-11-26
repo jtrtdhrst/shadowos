@@ -26,11 +26,13 @@ Launch OpenCode from the project checkout. No extra `opencode.json` is required 
 
 At the start of each task, fetch the remote and work from the appropriate up-to-date branch. Remote changes do not magically update local files. Start a fresh task/session after significant instruction changes when needed to ensure the applicable rules are read. Use Git's native history; no separate SHA registry is necessary.
 
-## 3. One-time GitHub setup (recommended, not yet applied)
+## 3. Branch protections and one-time GitHub setup
 
 Use a branch ruleset or classic branch protection, not duplicate mechanisms for the same purpose. The owner must configure and verify the actual repository settings; availability depends on repository visibility, plan and permissions.
 
-Recommended `main` policy:
+**Current repository state:** `bootstrap` is the GitHub default branch and `main` does not exist. An active ruleset protects `main`; it has prevented renaming `bootstrap` or creating `main`, and requires a `ci` check. The repository currently has no GitHub Actions workflows to emit that check. Keep protection unchanged; do not bypass it. Use the current default branch for work and PRs until the owner completes an approved `main` bootstrap and configures real CI.
+
+Recommended `main` policy if it becomes the default:
 
 | Rule | Setting |
 | --- | --- |
@@ -55,16 +57,16 @@ Discover these from existing repository configuration and deployment tooling. As
 
 | Fact | Value |
 | --- | --- |
-| GitHub repository / default branch | TBD / main (verify) |
-| Runtime and package manager | TBD |
-| Setup/install command | TBD |
-| Local lint / typecheck / test / build commands | TBD |
-| Required GitHub check names | TBD |
-| Deployment target and trigger | TBD / N/A |
-| How to identify deployed revision | TBD / N/A |
-| Production URL / smoke checks | TBD / N/A |
-| Rollback procedure / previous release identification | TBD / N/A |
-| Secret management location (names only, never values) | TBD / N/A |
+| GitHub repository / default branch | `jtrtdhrst/shadowos` / `bootstrap` (verified through `origin/HEAD`) |
+| Runtime and package manager | Static HTML/CSS/JS; Wrangler CLI via `npx` |
+| Setup/install command | None |
+| Local lint / typecheck / test / build commands | No configured lint, typecheck or test suite; validate Worker deployment with Wrangler dry-run |
+| Required GitHub check names | `Workers Builds: shadow-os` (observed; latest PR check failed) |
+| Deployment target and trigger | Cloudflare Worker `shadow-os`; owner-confirmed Production branch `bootstrap`, build command none, deploy command `npx wrangler deploy`, root `/`, watch include `*` and exclude `node_modules/**, .git/` |
+| How to identify deployed revision | Cloudflare build/deployment record; not yet independently verified |
+| Production URL / smoke checks | Worker public URL and production smoke test still need verification |
+| Rollback procedure / previous release identification | Cloudflare deployment history; procedure not yet exercised |
+| Secret management location (names only, never values) | Cloudflare Workers Builds settings; never record token values or identifiers in repository docs |
 
 ## 5. Task execution
 
@@ -75,8 +77,8 @@ Check status and fetch before implementation. The following commands illustrate 
 ```sh
 git status --short --branch
 git fetch origin
-git switch main
-git pull --ff-only origin main
+git switch bootstrap
+git pull --ff-only origin bootstrap
 git switch -c feat/short-task-name
 ```
 
@@ -92,7 +94,7 @@ Before pushing, check `git status`, `git diff` and the staged diff. Stage intend
 
 ### 5.3 Pull request and CI
 
-Commit and push the task branch. Open or update the one PR targeting `main`. Use the GitHub UI, authorized GitHub tooling or authenticated `gh` CLI already available; do not add a new integration just to perform this step.
+Commit and push the task branch. Open or update the one PR targeting the current GitHub default branch (`bootstrap` while it remains the default). Use the GitHub UI, authorized GitHub tooling or authenticated `gh` CLI already available; do not add a new integration just to perform this step.
 
 PR description should include: scope/reason, relevant requirement or task reference (if present), tests run and results, deployment or migration notes when needed, and any known limitations.
 
@@ -110,11 +112,11 @@ Use one straightforward CI workflow unless the project needs separation. For cod
 - Production build or equivalent package validation.
 - Secret detection using available repository or CI tooling; never expose detected secret values.
 
-Run required checks on PRs targeting `main`; ensure the required check reports a result even for changes that safely skip expensive steps. Verify the merged revision as well where the deployment process depends on a successful main build. Do not require tools that do not apply to the stack or introduce artificial checks solely for process compliance.
+Run required checks on PRs targeting the current default branch (`bootstrap` while it remains the default); ensure the required check reports a result even for changes that safely skip expensive steps. Verify the merged revision as well where the deployment process depends on a successful default-branch build. Do not require tools that do not apply to the stack or introduce artificial checks solely for process compliance.
 
 ### 5.5 Deploy and verify
 
-For a deployed product, prefer the existing pipeline's deployment triggered by the merged `main` revision. If deployment requires an authorized manual action, perform it only within the agreed policy. Do not add a deployment system unless requested. Do not deploy a feature branch directly to production as a substitute for merging.
+For a deployed product, prefer the existing pipeline's deployment triggered by the merged current default branch (`bootstrap` while it remains the default). If deployment requires an authorized manual action, perform it only within the agreed policy. Do not add a deployment system unless requested. Do not deploy a feature branch directly to production as a substitute for merging.
 
 Verify the deployment result and the actual revision/build identity against the intended release using existing platform evidence (commit SHA, image digest or release record). Check application health and perform the primary affected user journey plus relevant negative scenarios. Use safe, non-destructive test data or an authorized test environment; do not alter real customer data for verification.
 
@@ -137,7 +139,7 @@ A recovery procedure is not evidence that rollback works. For a new deployment p
 
 ## 7. Completion and cleanup
 
-After successful delivery, verify the PR merge and applicable deployment/tests. Let GitHub delete the merged head branch automatically where enabled; clean the local branch only when its work is safely merged and no changes remain. Do not remove unrelated branches. Refresh `main` safely when returning to it.
+After successful delivery, verify the PR merge and applicable deployment/tests. Let GitHub delete the merged head branch automatically where enabled; clean the local branch only when its work is safely merged and no changes remain. Do not remove unrelated branches. Refresh the current default branch (`bootstrap` while it remains the default) safely when returning to it.
 
 Keep GitHub as the history of code, PRs and decisions. An issue tracker is optional. If the task was tracked in an issue, update its status only to match verified delivery. No separate audit system is required for this project size.
 
