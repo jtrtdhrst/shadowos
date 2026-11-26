@@ -61,10 +61,10 @@ Discover these from existing repository configuration and deployment tooling. As
 | Runtime and package manager | Static HTML/CSS/JS; Wrangler CLI via `npx` |
 | Setup/install command | None |
 | Local lint / typecheck / test / build commands | No configured lint, typecheck or test suite; validate Worker deployment with Wrangler dry-run |
-| Required GitHub check names | `Workers Builds: shadow-os` (observed; latest PR check failed) |
+| Required GitHub check names | `Workers Builds: shadow-os` (Preview and Production builds passed for the latest merged revision; see PR #2 and its linked check runs) |
 | Deployment target and trigger | Cloudflare Worker `shadow-os`; owner-confirmed Production branch `bootstrap`, build command none, Production deploy command `npx wrangler deploy`, Preview command `npx wrangler preview`, root `/`, watch include `*` and exclude `node_modules/**, .git/`; Wrangler config must include `previews` (empty for this static Worker) |
-| How to identify deployed revision | Cloudflare build/deployment record; not yet independently verified |
-| Production URL / smoke checks | Worker public URL and production smoke test still need verification |
+| How to identify deployed revision | Cloudflare Production build for commit `2d610cfec61e2bafa05b168dda70c607408b538f`: [build `e336fc80-0a54-4647-9c39-660732506cda`](https://dash.cloudflare.com/c056821a7ee2aabdcf0a6dc447490184/workers/services/view/shadow-os/production/builds/e336fc80-0a54-4647-9c39-660732506cda); Worker version `b6d87104-5e74-4fa6-bb8b-bba3bd457ef8` |
+| Production URL / smoke checks | Owner-provided page content includes `Hello, world.` and `ONLINE`; independent HTTP/browser smoke test still needs the public Worker URL. Verify the page response, CSS/JS assets, and the status button interaction |
 | Rollback procedure / previous release identification | Cloudflare deployment history; procedure not yet exercised |
 | Secret management location (names only, never values) | Cloudflare Workers Builds settings; never record token values or identifiers in repository docs |
 
@@ -119,6 +119,8 @@ Run required checks on PRs targeting the current default branch (`bootstrap` whi
 For a deployed product, prefer the existing pipeline's deployment triggered by the merged current default branch (`bootstrap` while it remains the default). If deployment requires an authorized manual action, perform it only within the agreed policy. Do not add a deployment system unless requested. Do not deploy a feature branch directly to production as a substitute for merging.
 
 Verify the deployment result and the actual revision/build identity against the intended release using existing platform evidence (commit SHA, image digest or release record). Check application health and perform the primary affected user journey plus relevant negative scenarios. Use safe, non-destructive test data or an authorized test environment; do not alter real customer data for verification.
+
+For the static ShadowOS page, the browser smoke test should confirm the page loads with `Hello, world.`, the status reads `ONLINE`, the CSS and JavaScript assets load successfully, and **Sprawdź status** updates the status message. A green Cloudflare build alone does not satisfy this check.
 
 Documentation-only changes or tasks without a deployment target can be completed at their applicable delivery level. If a production deployment is expected but cannot be verified, explicitly report `MERGED — DEPLOYMENT UNVERIFIED` or the actual failure state. Do not equate a successful build with a successful deployment.
 
