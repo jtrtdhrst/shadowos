@@ -9,6 +9,8 @@ $ErrorActionPreference = "Stop"
 $TaskName = "ShadowOS GitHub Auto Sync"
 $script:GitWorkingDirectory = $null
 $script:RepositoryRoot = $null
+$script:RepositoryMutex = $null
+$script:MutexHeld = $false
 $script:LogPath = Join-Path $env:LOCALAPPDATA "ShadowOS\sync.log"
 
 function Write-SyncLog {
@@ -33,8 +35,11 @@ function Write-SyncLog {
 function Invoke-Git {
     param([Parameter(Mandatory)][string[]]$GitArguments)
 
-    $output = & git -C $script:GitWorkingDirectory @GitArguments 2>&1
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $output = & git -c "credential.helper=" -c "credential.helper=!gh auth git-credential" -C $script:GitWorkingDirectory @GitArguments 2>&1
     $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
     if ($exitCode -ne 0) {
         throw "Git command failed (exit code $exitCode): git $($GitArguments -join ' ')"
     }
@@ -75,11 +80,18 @@ function Invoke-RepositorySync {
         throw "Could not resolve the GitHub default branch from origin/HEAD."
     }
 
-    $defaultBranch = $defaultRef.Substring("origin/".Length)
     $currentBranch = [string](Invoke-Git @("branch", "--show-current"))
     $currentBranch = $currentBranch.Trim()
-    if ($currentBranch -ne $defaultBranch) {
-        throw "This checkout is on '$currentBranch'; automatic sync only updates the default branch '$defaultBranch'."
+    if ([string]::IsNullOrWhiteSpace($currentBranch)) {
+        throw "Could not resolve the checked-out branch; automatic sync requires a branch checkout."
+    }
+
+    $trackingRef = "refs/remotes/origin/$currentBranch"
+    $trackingExists = & git -C $script:GitWorkingDirectory show-ref --verify --quiet $trackingRef
+    if ($LASTEXITCODE -ne 0) {
+        $message = "No origin/$currentBranch branch exists yet; nothing to pull."
+        Write-SyncLog $message
+        return $message
     }
 
     $localChanges = [string](Invoke-Git @(
@@ -91,17 +103,17 @@ function Invoke-RepositorySync {
         throw "This checkout has local changes. Sync stopped without changing files; preserve the work, then retry."
     }
 
-    $null = Invoke-Git @("merge", "--ff-only", $defaultRef)
+    $null = Invoke-Git @("merge", "--ff-only", "origin/$currentBranch")
     $after = [string](Invoke-Git @("rev-parse", "HEAD"))
     $after = $after.Trim()
 
     if ($before -ne $after) {
-        $message = "Updated $defaultBranch from $before to $after."
+        $message = "Updated $currentBranch from $before to $after."
         Write-SyncLog $message
         return $message
     }
 
-    return "Already current: $defaultBranch at $after."
+    return "Already current: $currentBranch at $after."
 }
 
 try {
@@ -110,6 +122,20 @@ try {
     }
 
     Initialize-Repository
+    $mutexSuffix = [regex]::Replace($script:RepositoryRoot.ToLowerInvariant(), "[^a-z0-9]", "_")
+    $script:RepositoryMutex = New-Object System.Threading.Mutex($false, "Local\ShadowOSGitSync_$mutexSuffix")
+    try {
+        $script:MutexHeld = $script:RepositoryMutex.WaitOne([TimeSpan]::FromSeconds(30))
+    }
+    catch [System.Threading.AbandonedMutexException] {
+        $script:MutexHeld = $true
+        Write-SyncLog "Recovered an abandoned repository sync lock."
+    }
+    if (-not $script:MutexHeld) {
+        Write-SyncLog "Skipped sync because another repository sync/publish is running."
+        Write-Output "Skipped: another repository sync/publish is running."
+        return
+    }
 
     if ($Uninstall) {
         $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
@@ -145,6 +171,18 @@ try {
             -RunLevel Limited
 
         if ($PSCmdlet.ShouldProcess($TaskName, "Install/update per-user task to sync every minute")) {
+            $hooksPath = Join-Path $script:RepositoryRoot ".githooks"
+            if (-not (Test-Path -LiteralPath (Join-Path $hooksPath "post-commit"))) {
+                throw "Git post-commit hook not found in $hooksPath."
+            }
+            if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+                throw "GitHub CLI (gh) is required for commit publication and PR creation. Install it and run 'gh auth login'."
+            }
+            & gh auth status --hostname github.com *> $null
+            if ($LASTEXITCODE -ne 0) {
+                throw "GitHub CLI is not authenticated. Run 'gh auth login' and retry installation."
+            }
+            $null = Invoke-Git @("config", "--local", "core.hooksPath", ".githooks")
             $syncResult = Invoke-RepositorySync
             Register-ScheduledTask `
                 -TaskName $TaskName `
@@ -152,10 +190,10 @@ try {
                 -Trigger $trigger `
                 -Settings $settings `
                 -Principal $principal `
-                -Description "Fast-forward the clean ShadowOS checkout from the GitHub default branch every minute." `
+                -Description "Fast-forward the clean checked-out ShadowOS branch from its matching GitHub branch every minute." `
                 -Force | Out-Null
             Write-SyncLog "Installed scheduled task; $syncResult"
-            Write-Output "Installed '$TaskName'. It checks the GitHub default branch every minute while you are signed in."
+            Write-Output "Installed '$TaskName'. It checks the checked-out branch every minute while you are signed in; local task-branch commits are pushed by the Git post-commit hook."
             Write-Output $syncResult
         }
         return
@@ -175,4 +213,12 @@ catch {
     }
     [Console]::Error.WriteLine($message)
     exit 1
+}
+finally {
+    if ($script:MutexHeld -and $null -ne $script:RepositoryMutex) {
+        $script:RepositoryMutex.ReleaseMutex()
+    }
+    if ($null -ne $script:RepositoryMutex) {
+        $script:RepositoryMutex.Dispose()
+    }
 }

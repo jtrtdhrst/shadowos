@@ -67,22 +67,22 @@ Confirm that `HEAD` matches `origin/bootstrap`, all three paths are listed, and 
 
 #### Automatic updates on Windows
 
-For a local folder that should pick up merged default-branch changes automatically, use a dedicated clean clone and `scripts/sync-repo.ps1`. It fetches the current GitHub default branch and fast-forwards the checkout once per minute. It does not push local work, switch branches, or sync unmerged PRs. It stops if the checkout has local changes or is on a non-default branch, so it never resets or overwrites those edits.
+For a local folder that should synchronize commits in both directions, use `scripts/sync-repo.ps1 -Install` from the checkout. Installation configures the repository-local `.githooks` directory and a per-user Windows Scheduled Task. The `post-commit` hook pushes each commit on a task branch to the matching GitHub branch and opens a PR to the current default branch if needed. Commits on the default branch are deliberately not auto-pushed: create a task branch and use the PR workflow. GitHub-to-local synchronization fetches the currently checked-out branch every minute and fast-forwards it only when the working tree is clean. A dirty tree, divergent history, missing remote branch, or authentication failure is never reset or overwritten; check `%LOCALAPPDATA%\ShadowOS\sync.log` and resolve the condition before retrying.
 
-From the repository root in PowerShell, install the per-user Scheduled Task:
+Install GitHub CLI and authenticate it once on each computer (`gh auth login`), then from the repository root in PowerShell install the post-commit hook and per-user Scheduled Task:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -Install
 ```
 
-The task runs while that Windows user is signed in, starts missed runs when available, and skips overlapping runs. Its update/error log is `%LOCALAPPDATA%\ShadowOS\sync.log`. To run a one-time sync manually, omit `-Install`; to remove the task, use `-Uninstall`:
+The task runs while that Windows user is signed in, starts missed runs when available, and skips overlapping runs. Sync/publish commands use the existing `gh` authentication through a command-scoped Git credential helper; no token is written to repository files or global Git configuration. Local commits are pushed immediately by Git's post-commit hook (not by the scheduled task). Its update/error log is `%LOCALAPPDATA%\ShadowOS\sync.log`. To run a one-time sync manually, omit `-Install`; to remove the task, use `-Uninstall`:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -RepositoryPath .
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-repo.ps1 -Uninstall
 ```
 
-The scheduled task uses `-ExecutionPolicy Bypass` for that PowerShell process only; it does not change the machine's execution-policy setting. A one-minute poll is not real-time: changes appear after they are merged into the GitHub default branch and the next scheduled run succeeds. Use a separate checkout for editing; if the sync clone becomes dirty, the task stops and logs the reason instead of replacing local files. The initial checkout and scheduled task must be set up separately on each computer.
+The scheduled task uses `-ExecutionPolicy Bypass` for that PowerShell process only; it does not change the machine's execution-policy setting. GitHub commits appear after the next successful one-minute poll; this is near-real-time polling, not an instant webhook. The task updates the currently checked-out branch only. To receive a merged PR on a checkout that is on a task branch, switch to the default branch after preserving or merging that work. Each computer needs its own clone, Git hook installation, and scheduled task. GitHub is authoritative for committed history; local uncommitted changes remain local.
 
 ## 3. Branch protections and one-time GitHub setup
 
@@ -116,11 +116,12 @@ Discover these from existing repository configuration and deployment tooling. As
 | Fact | Value |
 | --- | --- |
 | GitHub repository / default branch | `jtrtdhrst/shadowos` / `bootstrap` (verified through `origin/HEAD`) |
+| Production website | <https://shadowos.miloszspyrka.pl/> (owner-provided) |
 | Runtime and package manager | Static HTML/CSS/JS; Wrangler CLI via `npx` |
 | Setup/install command | None |
 | Local lint / typecheck / test / build commands | No configured lint, typecheck or test suite; validate Worker deployment with Wrangler dry-run |
 | Required GitHub check names | `Workers Builds: shadow-os` (Preview and Production builds passed for the latest merged revision; see PR #2 and its linked check runs) |
-| Deployment target and trigger | Cloudflare Worker `shadow-os`; owner-confirmed Production branch `bootstrap`, build command none, Production deploy command `npx wrangler deploy`, Preview command `npx wrangler preview`, root `/`, watch include `*` and exclude `node_modules/**, .git/`; Wrangler config must include `previews` (empty for this static Worker) |
+| Deployment target and trigger | Cloudflare Worker `shadow-os`; owner-confirmed Production branch `bootstrap`, build command none, Production deploy command `npx wrangler deploy`, Preview command `npx wrangler preview`, root `/`, watch include `*` and exclude `node_modules/**, .git/`; Wrangler config must include `previews` (empty for this static Worker). Production URL: <https://shadowos.miloszspyrka.pl/> |
 | How to identify deployed revision | Cloudflare Production build for commit `2d610cfec61e2bafa05b168dda70c607408b538f`: [build `e336fc80-0a54-4647-9c39-660732506cda`](https://dash.cloudflare.com/c056821a7ee2aabdcf0a6dc447490184/workers/services/view/shadow-os/production/builds/e336fc80-0a54-4647-9c39-660732506cda); Worker version `b6d87104-5e74-4fa6-bb8b-bba3bd457ef8` |
 | Production URL / smoke checks | Owner-provided page content includes `Hello, world.` and `ONLINE`; independent HTTP/browser smoke test still needs the public Worker URL. Verify the page response, CSS/JS assets, and the status button interaction |
 | Rollback procedure / previous release identification | Cloudflare deployment history; procedure not yet exercised |
