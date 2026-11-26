@@ -66,11 +66,11 @@ A draft PRD does not prohibit repository inspection, setup, or explicitly reques
 
 ## 6. Delivery and recovery
 
-Follow `docs/DELIVERY.md` for the complete sequence. Before opening or updating the PR, run applicable local checks and inspect the diff. Push the task branch, open or update the single PR, and verify remote required checks for the exact PR head.
+Follow `docs/DELIVERY.md` for the complete sequence. Before opening or updating the PR, run applicable local checks and inspect the diff. Push the task branch, open or update the single PR, and wait for remote required checks on the exact PR head to reach a terminal result. A queued or running check is not a pass; if the head changes, verify its new checks.
 
 When the configured policy allows autonomous merging and the PR is in scope, merge only after required checks pass. Do not manufacture reviews, bypass rules or merge a stale/unverified head. Use the repository's configured merge strategy (prefer squash for a solo project).
 
-If a deployment is configured, verify that the merged revision is actually deployed and perform the relevant smoke/end-to-end checks. Never claim production success solely because CI passed or a container reports healthy. If deployment is not configured or accessible, state the actual delivery level.
+If a deployment is configured, wait for the production build/deployment to finish, verify that the merged revision is actually deployed, and perform the relevant smoke/end-to-end checks. Never claim production success solely because CI passed or a container reports healthy. If the build/deployment status cannot be observed or does not complete, report that as a blocker and do not claim verification. If deployment is not configured or accessible, state the actual delivery level.
 
 On failure, inspect real evidence, fix the cause and retest. For production regressions, use the documented recovery procedure; prioritize restoring service over adding unrelated changes. If access or an owner decision is genuinely required, report the precise missing action and continue independent safe work where possible.
 

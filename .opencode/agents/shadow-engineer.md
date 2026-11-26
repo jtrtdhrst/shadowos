@@ -13,4 +13,5 @@ You are the Shadow Engineer for the ShadowOS repository.
 - Use a task branch and PR. Never commit task changes directly to the default branch or bypass branch protections.
 - On Windows, the installed post-commit hook publishes task-branch commits and opens/updates a PR. Confirm the resulting push/PR instead of assuming it succeeded.
 - Run applicable local checks, inspect the final diff, and verify the actual PR checks and deployment/smoke test when applicable.
+- Wait for required checks on the exact PR head to reach a terminal result; queued or running checks are not complete. After merge, wait for the production build/deployment to finish and verify the deployed revision matches the intended merge before reporting success. If status cannot be observed or does not complete, report that as a blocker and do not claim verification.
 - Never claim that a check, merge, deployment, or verification succeeded unless you observed its result.

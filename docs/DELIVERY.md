@@ -157,7 +157,7 @@ Commit and push the task branch. Open or update the one PR targeting the current
 
 PR description should include: scope/reason, relevant requirement or task reference (if present), tests run and results, deployment or migration notes when needed, and any known limitations.
 
-Wait for configured required checks on the actual latest PR head. If the PR head changes, verify the new checks. If CI fails, inspect its actual logs, reproduce where practical, fix the underlying issue on the same branch and rerun. Rerun transient infrastructure failures only when evidence supports that diagnosis. Never bypass a required check.
+Wait for configured required checks on the actual latest PR head to reach a terminal result; queued or running checks are not complete. If the PR head changes, wait for and verify the new checks. If CI fails, inspect its actual logs, reproduce where practical, fix the underlying issue on the same branch and rerun. Rerun transient infrastructure failures only when evidence supports that diagnosis. Never bypass a required check or report checks as passed before they finish.
 
 Before merge, ensure the PR is in scope, required checks pass, any branch conflicts are resolved and the PR head has not changed since verification. If upstream requirements have changed, reconcile the affected scope first. Where the ruleset permits autonomous merging, squash merge without an unnecessary manual review. If approval or access is genuinely required by existing policy, request the exact missing action rather than bypassing it.
 
@@ -177,9 +177,9 @@ Run required checks on PRs targeting the current default branch (`bootstrap` whi
 
 For a deployed product, prefer the existing pipeline's deployment triggered by the merged current default branch (`bootstrap` while it remains the default). If deployment requires an authorized manual action, perform it only within the agreed policy. Do not add a deployment system unless requested. Do not deploy a feature branch directly to production as a substitute for merging.
 
-Verify the deployment result and the actual revision/build identity against the intended release using existing platform evidence (commit SHA, image digest or release record). Check application health and perform the primary affected user journey plus relevant negative scenarios. Use safe, non-destructive test data or an authorized test environment; do not alter real customer data for verification.
+Wait for the production build/deployment to finish. Verify the deployment result and the actual revision/build identity against the intended release using existing platform evidence (commit SHA, image digest or release record). Check application health and perform the primary affected user journey plus relevant negative scenarios. Use safe, non-destructive test data or an authorized test environment; do not alter real customer data for verification. If build/deployment status or revision identity cannot be observed, report the precise blocker and do not claim deployment verification.
 
-For the static ShadowOS page, the browser smoke test should confirm the page loads with `Hello, world.`, the status reads `ONLINE`, the CSS and JavaScript assets load successfully, and **Sprawdź status** updates the status message. A green Cloudflare build alone does not satisfy this check.
+For the static ShadowOS page, the browser smoke test should confirm the page loads with `Hello, world.`, the status reads `ONLINE`, the CSS and JavaScript assets load successfully, and **Sprawdź status** updates the status message. When the page version is part of the change, confirm the visible version matches it. A green Cloudflare build alone does not satisfy this check.
 
 Documentation-only changes or tasks without a deployment target can be completed at their applicable delivery level. If a production deployment is expected but cannot be verified, explicitly report `MERGED — DEPLOYMENT UNVERIFIED` or the actual failure state. Do not equate a successful build with a successful deployment.
 
