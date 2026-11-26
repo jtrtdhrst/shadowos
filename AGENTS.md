@@ -90,12 +90,4 @@ For documentation-only, research-only or other tasks that do not require deploym
 
 ## 8. Final report
 
-Keep reports short, factual and evidence-based. Include:
-
-- What changed and why.
-- Tests/checks actually executed and their results.
-- PR link, merge commit and deployment reference when applicable.
-- Post-deploy verification or explicit reason it was not performed.
-- Any unresolved limitation and the exact next action required.
-
-Never report an operation that was not performed or a result that was not observed.
+Keep reports short, factual and in the owner's language. Use the required fields in `docs/DELIVERY.md`; mark checks and delivery stages only with observed outcomes. Separate passed checks, unverified stages, non-blocking limitations and blockers. List every blocker with its exact cause and required next action, or explicitly state that there are none. Give a reason whenever a stage is `N/A` or unverified. Never report an operation that was not performed or a result that was not observed; do not report `DONE` while any required stage remains unverified.
